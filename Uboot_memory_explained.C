@@ -238,7 +238,7 @@ static void move64(const unsigned long long *src, unsigned long long *dest)
  * "otherpattern"被写入以驱动数据总线到除测试样板外的其他值。这是用于检测浮动总线。
  */
 const static unsigned long long pattern[] = {
-	0xaaaaaaaaaaaaaaaaULL,	// 二进制即 1010 1010 ... ...
+	0xaaaaaaaaaaaaaaaaULL,	// 二进制即 1010 1010 ... ...	16*8 = 128
 	0xccccccccccccccccULL,	// 二进制即 1100 1100 ... ...
 	0xf0f0f0f0f0f0f0f0ULL,  // 二进制即 1111 0000 ... ...
 	0xff00ff00ff00ff00ULL,
@@ -251,12 +251,15 @@ const static unsigned long long pattern[] = {
 	0x3333333333333333ULL,
 	0x5555555555555555ULL
 };
-const unsigned long long otherpattern = 0x0123456789abcdefULL;
+// 用于 与固定pattern 区分 
+const unsigned long long otherpattern = 0x0123456789abcdefULL;	
+
 
 
 // 	数据线测试 
 //	通过强制相邻数据到相反状态，测试数据线的短路和断路。
-// 64位系统中 unsigned long long 占64bit，即8字节. 
+// 64位系统中 unsigned long long 16字节 是数据位宽两倍
+// 输入 pmem ： 起始地址
 static int memory_post_dataline(unsigned long long * pmem)
 {
 	unsigned long long temp64 = 0;
@@ -265,22 +268,41 @@ static int memory_post_dataline(unsigned long long * pmem)
 	unsigned int hi, lo, pathi, patlo;
 	int ret = 0;
 
+
+	/*	检测原理解析
+		1.	读相邻相反pattern	写入 pmem 地址
+			pmem
+			ffff0000	ffff0000
+
+		2.	读otherpattern 写入 pmem+1 地址
+			pmem + 1
+			01234567	89abcdef
+
+		3.	读 pmem 地址的数据	写入 temp64
+			&temp64
+			ffff0000	ffff0000	(即pmem，如果不出错)
+
+		如果存在浮动总线，
+		则 步骤2 中 先写 01234567 ，步骤3 立即读 ffff0000会出错
+	*/
+
+
 	for ( i = 0; i < num_patterns; i++) {
-		move64(&(pattern[i]), pmem++);
+		move64(&(pattern[i]), pmem++);	// pattern i 写入 pmem 后一位
 		/*
 		 * Put a different pattern on the data lines: otherwise they
 		 * may float long enough to read back what we wrote.
 		 * 在数据线上放置不同的样板：否则它们可能会浮动过长，读回我们写入的内容。
 		 */
-		move64(&otherpattern, pmem--);
-		move64(pmem, &temp64);
+		move64(&otherpattern, pmem--);	// otherpattern 写入 原 pmem地址: 用于检测是否有浮动总线
+		move64(pmem, &temp64);			// pmem数据 暂存至 temp64 
 
 #ifdef INJECT_DATA_ERRORS
 		temp64 ^= 0x00008000;
 #endif
 
-		// temp64 是读回的数据
-		if (temp64 != pattern[i]){
+		// temp64 即读回的 pmem ，与写入的pattern 不符
+		if (temp64 != pattern[i]){	
 			pathi = (pattern[i]>>32) & 0xffffffff;
 			patlo = pattern[i] & 0xffffffff;
 
@@ -339,9 +361,10 @@ static int memory_post_addrline(ulong *testaddr, ulong *base, ulong size)
 
 
 
-// 内存单元 1号测试
+// 内存单元 1号测试	：	从start地址开始，size大小的内存，写入指定的val值再读取
 // 输入：start: ulong形式表示 起始地址
 //		size: 待测试内存大小 单位：字节
+//		val: 写入的测试值 位宽与系统一致
 static int memory_post_test1(unsigned long start,
 			      unsigned long size,
 			      unsigned long val)
@@ -361,6 +384,7 @@ static int memory_post_test1(unsigned long start,
 			WATCHDOG_RESET();	// 64位：每测1024次，共计8KB,喂一次狗
 	}
 
+	// 读取验证
 	for (i = 0; i < size / sizeof (ulong) && !ret; i++) {
 		readback = mem[i];
 		if (readback != val) {
@@ -378,6 +402,12 @@ static int memory_post_test1(unsigned long start,
 	return ret;
 }
 
+
+
+// 内存单元 2号测试	：	无需指定写入值
+// 从start地址开始，size大小的内存，写入再读取验证
+// 输入：start: ulong形式表示 起始地址
+//		size: 待测试内存大小 单位：字节
 static int memory_post_test2(unsigned long start, unsigned long size)
 {
 	unsigned long i;
@@ -386,11 +416,12 @@ static int memory_post_test2(unsigned long start, unsigned long size)
 	int ret = 0;
 
 	for (i = 0; i < size / sizeof (ulong); i++) {
-		mem[i] = 1 << (i % 32);
+		mem[i] = 1 << (i % 32);	// 在位置 i 写入 左移i位的 1
 		if (i % 1024 == 0)
 			WATCHDOG_RESET();
 	}
 
+	// 读回校验
 	for (i = 0; i < size / sizeof (ulong) && !ret; i++) {
 		readback = mem[i];
 		if (readback != (1 << (i % 32))) {
@@ -408,6 +439,11 @@ static int memory_post_test2(unsigned long start, unsigned long size)
 	return ret;
 }
 
+
+// 内存单元 3号测试	：	无需指定写入值
+// 从start地址开始，size大小的内存，写入再读取验证
+// 输入：start: ulong形式表示 起始地址
+//		size: 待测试内存大小 单位：字节
 static int memory_post_test3(unsigned long start, unsigned long size)
 {
 	unsigned long i;
@@ -416,7 +452,7 @@ static int memory_post_test3(unsigned long start, unsigned long size)
 	int ret = 0;
 
 	for (i = 0; i < size / sizeof (ulong); i++) {
-		mem[i] = i;
+		mem[i] = i;	// 在地址 i 写入	i
 		if (i % 1024 == 0)
 			WATCHDOG_RESET();
 	}
@@ -438,6 +474,11 @@ static int memory_post_test3(unsigned long start, unsigned long size)
 	return ret;
 }
 
+
+// 内存单元 4号测试	：	无需指定写入值
+// 从start地址开始，size大小的内存，写入再读取验证
+// 输入：start: ulong形式表示 起始地址
+//		size: 待测试内存大小 单位：字节
 static int memory_post_test4(unsigned long start, unsigned long size)
 {
 	unsigned long i;
@@ -446,7 +487,7 @@ static int memory_post_test4(unsigned long start, unsigned long size)
 	int ret = 0;
 
 	for (i = 0; i < size / sizeof (ulong); i++) {
-		mem[i] = ~i;
+		mem[i] = ~i;	// 在地址 i 写 i 的反码
 		if (i % 1024 == 0)
 			WATCHDOG_RESET();
 	}
@@ -468,6 +509,8 @@ static int memory_post_test4(unsigned long start, unsigned long size)
 	return ret;
 }
 
+
+// 调用数据线、地址线测试
 static int memory_post_test_lines(unsigned long start, unsigned long size)
 {
 	int ret = 0;
@@ -485,7 +528,7 @@ static int memory_post_test_lines(unsigned long start, unsigned long size)
 
 	return ret;
 }
-
+//调用内存测试1234
 static int memory_post_test_patterns(unsigned long start, unsigned long size)
 {
 	int ret = 0;
@@ -513,7 +556,7 @@ static int memory_post_test_patterns(unsigned long start, unsigned long size)
 
 	return ret;
 }
-
+// 内存块测试
 static int memory_post_test_regions(unsigned long start, unsigned long size)
 {
 	unsigned long i;
@@ -530,7 +573,7 @@ static int memory_post_test_regions(unsigned long start, unsigned long size)
 
 	return ret;
 }
-
+//先测数据、地址线	再调用内存测试1234
 static int memory_post_tests(unsigned long start, unsigned long size)
 {
 	int ret = 0;
