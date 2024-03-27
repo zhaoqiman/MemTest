@@ -77,7 +77,7 @@ void oneTest(unsigned long& collisionCount, unsigned long& crcCount, int id, int
     while (totalTime > 0) {
         // x 随机
         for (i = 0; i != WIDTH; i++) {
-            x[i] = dis(gen);
+            x[i] = rand() % 255 + 1;
             y[i] = x[i];
         }
 
