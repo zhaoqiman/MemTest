@@ -4,11 +4,14 @@
 #include <vector>
 #include <ctime>
 #include <random>
+#include <cstdlib>
 
-// 数据长度/字节
-#define WIDTH 32
+#define DEFAULT_WIDTH 32
+#define DEFAULT_TESTTIME 10000
+//数据长 /字节
+int WIDTH = DEFAULT_WIDTH;
 // 总测试次数
-const unsigned int TESTTIME = 1e7;
+unsigned int TESTTIME = DEFAULT_TESTTIME;   
 
 int crc_init = 0;
 unsigned int crc_table[256];
@@ -68,11 +71,11 @@ int hammingDist(unsigned int a, unsigned int b) {
 
 // 线程执行totalTime次测试函数
 void oneTest(unsigned long& collisionCount, unsigned long& crcCount, int id, int totalTime) {
+    srand((unsigned)time(0) + id<<8);
     unsigned char x[WIDTH];
     unsigned char y[WIDTH];
 
     int i = 0, j = 0;
-    srand((unsigned)time(0) + id<<8); // 每个线程都要随机
 
     while (totalTime > 0) {
         // x 随机
@@ -115,6 +118,13 @@ void oneTest(unsigned long& collisionCount, unsigned long& crcCount, int id, int
 }
 
 int main(int argc, char* argv[]) {
+
+    // 检查命令行参数数量
+    if (argc >= 3) {
+        WIDTH = std::atoi(argv[1]); // 第一个参数是 WIDTH
+        TESTTIME = std::atoi(argv[2]); // 第二个参数是 TESTTIME
+    }
+
     int numThreads = std::thread::hardware_concurrency(); // 获取可用的线程数量
 
     unsigned int totalTime = TESTTIME;
@@ -133,9 +143,9 @@ int main(int argc, char* argv[]) {
 
     unsigned long long allNum = totalTime * WIDTH * 8;
     std::cout << "Total tested code num is " << totalTime << std::endl;
-    std::cout << "Total possible wrong code num is" << allNum << std::endl;
+    std::cout << "Total possible wrong code num is " << allNum << std::endl;
     std::cout << "In which, collisionCount is " << collisionCount << std::endl;
     std::cout << "crcCount is " << crcCount << std::endl;
-    system("pause");
+
     return 0;
 }

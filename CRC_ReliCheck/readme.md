@@ -1,5 +1,8 @@
 # 利用CRC校验实现对象存储可靠性检查
-
+## crc32.cpp
+gcc编译需 -lpthread参数
+可指定数据位宽byte 与总测试次数
+./crc32 <WIDTH> <TESTTIME>
 ### 本脚本用于测量：
     存储出错，在CRC值中反应不出来的概率
 
