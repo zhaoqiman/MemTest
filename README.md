@@ -6,14 +6,20 @@
 
 #### u-boot下使用mtest工具
 编译u-boot前需在config文件中添加
+
     CONFIG_CMD_MEMTEST=y
+
 使用方法为
+
     mtest [start [end [pattern [iterations]]]]
+
 示例
+
     U-Boot> mtest 0x20000000 0x22000000 0xaabbccdd
     Testing 20000000 ... 22000000:
     Pattern FFFFFFFF55443322  Writing...  Reading...Iteration:   1094
     Tested 1094 iteration(s) with 0 errors.
+
 注意：测试地址不得覆盖u-boot所在内存
 
 
