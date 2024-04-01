@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
 			printf("Test over, no error.\n");
 		}
 		else{
-			printf("Error at Address 0x%X， ulong value 0x%X, errorType %d\n", errorAddr, *((unsigned long *) errorAddr), errorType);
+			printf("Error at Address 0x%X， ulong value 0x%X, errorType %d\n", errorAddr - map_base, *((unsigned long *) errorAddr), errorType);
 		}
 		fflush(stdout);
 	}
