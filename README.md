@@ -9,6 +9,11 @@
 
     CONFIG_CMD_MEMTEST=y
 
+注意，config中CONFIG_TEXT_BASE为u-boot内存起始地址，CONFIG_SYS_LOAD_ADDR为默认加载地址
+
+    CONFIG_TEXT_BASE=0x00080000
+    CONFIG_SYS_LOAD_ADDR=0x1000000
+
 使用方法为
 
     mtest [start [end [pattern [iterations]]]]
