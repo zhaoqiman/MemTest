@@ -2,7 +2,8 @@
 ## crc32.cpp
 gcc编译需 -lpthread参数
 可指定数据位宽byte 与总测试次数
-./crc32 <WIDTH> <TESTTIME>
+    g++ crc32.cpp -lpthread -o test
+    ./test 64 100000
 ### 本脚本用于测量：
     存储出错，在CRC值中反应不出来的概率
 

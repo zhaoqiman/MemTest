@@ -96,18 +96,18 @@ void oneTest(unsigned long& collisionCount, unsigned long& crcCount, int id, int
                 dist = hammingDist(Cx, Cy);
 
                 switch (dist) {
-                case 0:
-                    mtx.lock();
-                    collisionCount++;
-                    mtx.unlock();
-                    break;
-                case 1:
-                    mtx.lock();
-                    crcCount++;
-                    mtx.unlock();
-                    break;
-                default:
-                    break;
+                    case 0:
+                        mtx.lock();
+                        collisionCount++;
+                        mtx.unlock();
+                        break;
+                    case 1:
+                        mtx.lock();
+                        crcCount++;
+                        mtx.unlock();
+                        break;
+                    default:
+                        break;
                 }
                 //再反转 恢复 y 原样
                 y[i] ^= 1 << j;
@@ -123,6 +123,8 @@ int main(int argc, char* argv[]) {
     if (argc >= 3) {
         WIDTH = std::atoi(argv[1]); // 第一个参数是 WIDTH
         TESTTIME = std::atoi(argv[2]); // 第二个参数是 TESTTIME
+        std::cout << "Data Width is  " << WIDTH << "Bytes"<<std::endl;
+        std::cout << "Test will be carried by " << TESTTIME << "times"<<std::endl;
     }
 
     int numThreads = std::thread::hardware_concurrency(); // 获取可用的线程数量
