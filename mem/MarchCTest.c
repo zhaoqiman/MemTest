@@ -24,7 +24,6 @@ typedef unsigned long ulong;
 static ulong errorAddr = 0;
 static int errorType = -1;
 
-
 // FATAl宏定义，用于打印错误信息
 #define FATAL do { fprintf(stderr, "Error at line %d, file %s (%d) [%s]\n", \
   __LINE__, __FILE__, errno, strerror(errno)); exit(1); } while(0)
