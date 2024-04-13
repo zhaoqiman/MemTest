@@ -27,7 +27,7 @@ extern ErrorInfo error_info;
 int main(int argc, char **argv) {
     int fd;
     void *map_base;
-	ulong* virt_addr;
+	ulong* virt_start_addr;
 	//unsigned long read_result, writeval;
 	//off_t target;
 	//int access_type = 'w';
@@ -58,18 +58,23 @@ int main(int argc, char **argv) {
     printf("Memory mapped at address %p.\n", map_base); 
     fflush(stdout);
     
-    virt_addr = (ulong*)map_base + (start_addr & MAP_MASK);
+    virt_start_addr = (ulong*)map_base + (start_addr & MAP_MASK);
     
     // 根据 testAddr 和 test_size 进行测试
 	// 借虚拟地址完成 ram 的读写
 	if(argc > 1) {
-		int march_result = MarchCTest(virt_addr, test_size);
-        int checker_result = CheckerboardTest(virt_addr, test_size);
-		if(march_result == TEST_PASS && checker_result == TEST_PASS){
+		int march_result = MarchCTest(virt_start_addr, test_size);
+        int checker_result = CheckerboardTest(virt_start_addr, test_size);
+		int walking_result = WalkingTest(virt_start_addr, test_size);
+		if(march_result&&checker_result&&walking_result){
 			printf("Test over, no error.\n");
 		}
 		else{
-			printf("Error at Address 0x%lX， ulong write value 0x%lX, ulong read value  %lX\n", error_info.addr - (ulong)map_base, error_info.write_val, error_info.read_val);
+			ulong real_error_addr = error_info.addr + (ulong)(virt_start_addr - (start_addr & MAP_MASK));
+			printf("Error at Address 0x%lX， ulong write value 0x%lX, ulong read value  0x%lX\n", real_error_addr, error_info.write_val, error_info.read_val);
+			if(march_result == TEST_FAIL) printf("March C- test failed.\n");
+			if(checker_result == TEST_FAIL) printf("Checkerboard test failed.\n");
+			if(walking_result == TEST_FAIL) printf("Walking test failed.\n");
 		}
 		fflush(stdout);
 	}

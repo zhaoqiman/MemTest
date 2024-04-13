@@ -27,13 +27,17 @@ typedef struct Error_Info
 int R0W1(volatile ulong* addr,bool reverse);
 int R1W0(volatile ulong* addr, bool reverse);
 
+// Checkerboard algorithm RAM test
+int CheckerboardTest(ulong* start_addr, int test_size);
+
+// Walking algorithm RAM test
+int WalkingTest(ulong* start_addr, int test_size);
+
 // March C- algorithm RAM test 
 // Args:	
 //		start_addr: 待测内存起始地址
 //		test_size: 待测内存大小(Byte)
 int MarchCTest(ulong* start_addr, int test_size);
 
-// Checkerboard algorithm RAM test
-int CheckerboardTest(ulong* start_addr, int test_size);
 
 #endif // __MEM_TEST_H__
