@@ -85,6 +85,10 @@ int do_march(struct cmd_tbl *cmdtp, int flag, int argc, char *argv[])
 	unsigned long *ptr = start_addr;
 	unsigned long *end_addr = start_addr + test_size / sizeof(unsigned long);
 
+	int tmp;
+	int i;
+	int BIT_WIDTH = sizeof(unsigned long) * 8;
+
 	// 1. UP Write 0
 	for (ptr = start_addr; ptr < end_addr; ptr++)
 	{
@@ -93,56 +97,51 @@ int do_march(struct cmd_tbl *cmdtp, int flag, int argc, char *argv[])
 	// 2. UP read 0 write 1
 	for (ptr = start_addr; ptr < end_addr; ptr++)
 	{
-		if (*ptr == 0)
-		{
-			*ptr = 1;
-		}
-		else
-		{
-			printf("March C- Step 2 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
-			return -1;
+		for(i = BIT_WIDTH - 1; i >= 0; i--){
+			tmp = (((*ptr) >> i) & 0x1LU); // 取出第i位. 
+			if(tmp != 0){
+				printf("March C- Step 2 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
+				return -1;
+			}
+			*ptr = (*ptr | (0x1LU << i)); // 将第i位置1. 
 		}
 	}
 	// 3. DOWN read 1 write 0
 	for (ptr = end_addr - 1; ptr >= start_addr; ptr--)
 	{
-		if (*ptr == 1)
-		{
-			*ptr = 0;
-		}
-		else
-		{
-			printf("March C- Step 3 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
-			return -1;
+		for(i = 0; i < BIT_WIDTH; i++){
+			tmp = (((*ptr) >> i) & 0x1LU); // 取出第i位. 
+			if(tmp != 1){
+				printf("March C- Step 3 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
+				return -1;
+			}
+			*ptr &= ~(0x1LU << i); // 将第i位置0. 
 		}
 	}
 	// 4. DOWN read 0 write 1
 	for (ptr = end_addr - 1; ptr >= start_addr; ptr--)
 	{
-		if (*ptr == 0)
-		{
-			*ptr = 1;
-		}
-		else
-		{
-			printf("March C- Step 4 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
-			return -1;
+		for(i = BIT_WIDTH - 1; i >= 0; i--){
+			tmp = (((*ptr) >> i) & 0x1LU); // 取出第i位. 
+			if(tmp != 0){
+				printf("March C- Step 4 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
+				return -1;
+			}
+			*ptr = (*ptr | (0x1LU << i)); // 将第i位置1. 
 		}
 	}
 	// 5. UP read 1 write 0 read 0
 	for (ptr = start_addr; ptr < end_addr; ptr++)
 	{
-		if (*ptr == 1)
-		{
-			*ptr = 0;
+		for(i = 0; i < BIT_WIDTH; i++){
+			tmp = (((*ptr) >> i) & 0x1LU); // 取出第i位. 
+			if(tmp != 1){
+				printf("March C- Step 3 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
+				return -1;
+			}
+			*ptr &= ~(0x1LU << i); // 将第i位置0. 
 		}
-		else
-		{
-			printf("March C- Step 5 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
-			return -1;
-		}
-		if (*ptr != 0)
-		{
+		if(*ptr != 0){
 			printf("March C- Step 5 fail at Address: 0x%lx\n, value: 0x%lx\n", (unsigned long)ptr, *ptr);
 			return -1;
 		}
