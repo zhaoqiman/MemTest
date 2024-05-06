@@ -23,9 +23,8 @@ typedef struct Error_Info
 // 对ulong逐个bit 读0 写1 
 // Args:
 //		addr: 要测试的地址
-//		reverse: 是否逆序读写
-int R0W1(volatile ulong* addr,bool reverse);
-int R1W0(volatile ulong* addr, bool reverse);
+int R0W1(volatile ulong* addr);
+int R1W0(volatile ulong* addr);
 
 // Checkerboard algorithm RAM test
 int CheckerboardTest(ulong* start_addr, int test_size);

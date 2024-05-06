@@ -10,50 +10,38 @@ ErrorInfo error_info;
 
 
 // 对ulong逐个bit 读0 写1 
-int R0W1(volatile ulong* addr,bool reverse){
+int R0W1(volatile ulong* addr){
 	int tmp;
-	int i,j;
+	int i;
 
-	for(i = 0; i < BIT_WIDTH; i++){
-		if(reverse){
-			j = i;
-		}
-		else{
-			j = BIT_WIDTH-1-i;
-		}
-		tmp = (((*addr) >> j) & 0x1); // 取出第j位
+	for(i = BIT_WIDTH - 1; i >= 0; i--){
+		tmp = (((*addr) >> i) & 0x1LU); // 取出第i位. LU matters!
 		if(tmp != 0){
 			error_info.addr = (ulong)addr;
-			error_info.write_val = 0xffffffffffffffffLU << j;
+			error_info.write_val = 0xffffffffffffffffLU << i;
 			error_info.read_val = *addr;
 			return TEST_FAIL;
 		}
-		*addr |= (0x1LU << j); // 将第j位置1
+		*addr = (*addr | (0x1LU << i)); // 将第i位置1. LU matters!
 	}
 	return TEST_PASS;
 }
 
 
 // 对ulong逐个bit 读1 写0
-int R1W0(volatile ulong* addr, bool reverse){
+int R1W0(volatile ulong* addr){
 	int tmp;
-	int i,j;
+	int i;
 
 	for(i = 0; i < BIT_WIDTH; i++){
-		if(reverse){
-			j = i;
-		}
-		else{
-			j = BIT_WIDTH-1-i;
-		}
-		tmp = (((*addr) >> j) & 0x1); // 取出第j位
+		tmp = (((*addr) >> i) & 0x1LU); // 取出第i位. LU matters!
 		if(tmp != 1){
 			error_info.addr = (ulong)addr;
-			error_info.write_val = 0xffffffffffffffffLU >> j;
+			error_info.write_val = 0xffffffffffffffffLU >> i;
 			error_info.read_val = *addr;
 			return TEST_FAIL;
 		}
-		*addr &= ~(0x1 << i); // 将第j位置0
+		*addr &= ~(0x1LU << i); // 将第i位置0. LU matters!
 	}
 	return TEST_PASS;
 }
@@ -94,6 +82,7 @@ int WalkingTest(ulong* start_addr, int test_size){
 	int i;
 	ulong* end_addr = start_addr + test_size/BIT_WIDTH*8;
 	ulong* ptr = start_addr;
+	ulong* check_ptr = start_addr;
 	
 	// 全 0
 	for(ptr = start_addr; ptr < end_addr; ptr++){
@@ -104,12 +93,21 @@ int WalkingTest(ulong* start_addr, int test_size){
 		// 首 bit 写 1
 		*ptr = 0x1LU;
 		for(i = 0; i < BIT_WIDTH; i++){
-			// 读出验证
+			// 本宽度内读出验证
 			if(*ptr != (0x1LU << i)){
 				error_info.addr = (ulong)ptr;
 				error_info.write_val = 0x1LU << i;
 				error_info.read_val = *ptr;
 				return TEST_FAIL;
+			}
+			// 其余所有位置读出验证是否为0
+			for(check_ptr = start_addr; check_ptr < end_addr; check_ptr++){
+				if(check_ptr != ptr && *check_ptr != 0){
+					error_info.addr = (ulong)check_ptr;
+					error_info.write_val = 0;
+					error_info.read_val = *check_ptr;
+					return TEST_FAIL;
+				}
 			}
 			// 移位
 			*ptr <<= 1;
@@ -136,22 +134,22 @@ int MarchCTest(ulong* start_addr, int test_size){
 
 	// 2. 正序 read 0 write 1
 	for(ptr = start_addr; ptr < end_addr && result == TEST_PASS; ptr++){
-		result = R0W1(ptr,false);
+		result = R0W1(ptr);
 	}
 
 	// 3. 反序 read 1 write 0
 	for(ptr = end_addr-1; ptr >= start_addr && result == TEST_PASS; ptr--){
-		result = R1W0(ptr, true);
+		result = R1W0(ptr);
 	}
 
 	// 4. 反序 read 0 write 1
 	for(ptr = end_addr-1; ptr >= start_addr && result == TEST_PASS; ptr--){
-		result = R0W1(ptr, true);
+		result = R0W1(ptr);
 	}
 
 	// 5. 正序 read 1 write 0 read 0
 	for(ptr = start_addr; ptr < end_addr && result == TEST_PASS; ptr++){
-		result = R1W0(ptr, false);
+		result = R1W0(ptr);
 		if(*ptr != 0){
 			error_info.addr = (ulong)ptr;
 			error_info.write_val = 0;
