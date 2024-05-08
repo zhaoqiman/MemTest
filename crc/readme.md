@@ -9,8 +9,7 @@
 
 结果可见 论文 [32-Bit Cyclic Redundancy Codes for Internet Applications](../docs/32-Bit-Cyclic-Redundancy-Codes-for-Internet-Applications.pdf)
 
-
-![校验码在不同数据长度数下的最低汉明距离](..\\docs\Error-detection-capabilities-of-selected-32-bit-CRC-polynomials.png)
+![校验码在不同数据长度数下的最低汉明距离](../docs/Error-detection-capabilities-of-selected-32-bit-CRC-polynomials.png)
  
 
 统计 n 长度数据包，r 长度校验码，k 个错误下的汉明距离分布，复杂度约为 (n-r)^k，增长速度为阶乘级别。
